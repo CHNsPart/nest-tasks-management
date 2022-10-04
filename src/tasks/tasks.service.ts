@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { GetTaskFilterDTO } from './dto/get-task-filter.dto';
 import { CreateDTO } from './dto/create-task.dto';
 import { Injectable, NotFoundException } from '@nestjs/common';
@@ -10,12 +10,27 @@ import { TaskStatus } from './task-status.enum';
 @Injectable()
 export class TasksService {
     constructor( 
-        @InjectRepository(Task)    
-        private taskRepository: Repository<Task>
+        @InjectRepository(Task) private taskRepository: Repository<Task>,
      ) {}
 
+    async getTasks(filterDTO: GetTaskFilterDTO): Promise<Task[]> {
+        const { status, search } = filterDTO
+        const query = this.taskRepository.createQueryBuilder('task')
+        
+        if(status) {
+            query.andWhere('task.status = :status', { status })
+        }
+        if(search) {
+            query.andWhere('(task.title LIKE :search OR task.description LIKE :search)',
+            { search: `%${search}%` })
+        }
+
+        const tasks = await query.getMany()
+        return tasks
+    }
+
     async createTask(createDTO: CreateDTO): Promise<Task> {
-         const { title, description } = createDTO
+        const { title, description } = createDTO
 
         const task = new Task()
         task.title = title
@@ -37,6 +52,16 @@ export class TasksService {
 
     async deleteTask(id: number): Promise<void> {
         const result = await this.taskRepository.delete(id)
-        console.log(result)
+        
+        if(result.affected === 0) {
+            throw new NotFoundException(`Task with ID ${id} not found!`)
+        }
+    }
+
+    async updateTaskStatus(id: number, status: TaskStatus): Promise<Task> {
+        const task = await this.getTaskById(id)
+        task.status = status
+        await task.save()
+        return task
     }
 }
