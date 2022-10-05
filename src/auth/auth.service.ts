@@ -2,6 +2,7 @@ import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { AuthCredentialsDTO } from './dto/auth-credentials.dto';
 /* import { UserRepository } from './user.repository'; */
+import * as bcrypt from "bcrypt" 
 import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -19,7 +20,8 @@ export class AuthService {
 
         const user = new User()
         user.username = username
-        user.password = password
+        user.salt = await bcrypt.genSalt()
+        user.password = await this.hashPassword(password, user.salt)
 
         try {
             await user.save()
@@ -30,5 +32,9 @@ export class AuthService {
                 throw new InternalServerErrorException()
             }
         }
+    }
+
+    private async hashPassword(password: string, salt: string): Promise<string> {
+        return bcrypt.hash(password, salt)
     }
 }
