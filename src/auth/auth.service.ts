@@ -2,7 +2,7 @@ import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { AuthCredentialsDTO } from './dto/auth-credentials.dto';
 /* import { UserRepository } from './user.repository'; */
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
@@ -21,7 +21,14 @@ export class AuthService {
         user.username = username
         user.password = password
 
-        await user.save()
-
+        try {
+            await user.save()
+        } catch (error) {
+            if(error.code === "23505") {
+                throw new ConflictException('Username already exist')
+            } else {
+                throw new InternalServerErrorException()
+            }
+        }
     }
 }
