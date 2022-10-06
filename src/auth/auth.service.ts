@@ -1,16 +1,18 @@
-import { Repository } from 'typeorm';
+import { ConflictException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { JwtPayload } from './jwt-payload.interface';
 import { User } from './user.entity';
 import { AuthCredentialsDTO } from './dto/auth-credentials.dto';
 /* import { UserRepository } from './user.repository'; */
 import * as bcrypt from "bcrypt" 
-import { ConflictException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
     constructor( 
-        @InjectRepository(User)
-        private userRepository: Repository<User>/* Repository<User> */
+        @InjectRepository(User) private userRepository: Repository<User>,/* Repository<User> */
+        private jwtService: JwtService,
      ) {}
 
     async signup(authCredentialsDTO: AuthCredentialsDTO): Promise<void> {
@@ -34,18 +36,32 @@ export class AuthService {
         }
     }
 
-    async signin(authCredentialsDTO: AuthCredentialsDTO): Promise<string> {
+    async validateUserPassword(authCredentialsDTO: AuthCredentialsDTO): Promise<string> {
         const { username, password } = authCredentialsDTO
         const user = await this.userRepository.findOneBy({ username })
         
-        if (user && await user.ValidationPassword(password)) {
-            const username = user.username
-            return username
+        if (user && await user.validatePassword(password)) {
+            // console.log(username)
+            return user.username
+            //return result
         } else {
-            throw new UnauthorizedException('Invalid Credentials')
-        }
+            return null
+        }       
     }
 
+    async signin(authCredentialsDTO: AuthCredentialsDTO): Promise<{ accessToken: string }> {
+        const username = await this.validateUserPassword(authCredentialsDTO)
+        /* console.log(username) */
+        if (!username) {
+            throw new UnauthorizedException("Invalid Credentials")
+        }
+        
+        const payload: JwtPayload = { username }
+        const accessToken: string = this.jwtService.sign(payload)
+
+        return { accessToken }
+    }
+    
 
     private async hashPassword(password: string, salt: string): Promise<string> {
         return bcrypt.hash(password, salt)

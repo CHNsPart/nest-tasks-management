@@ -1,6 +1,9 @@
+import { User } from './user.entity';
+import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthCredentialsDTO } from './dto/auth-credentials.dto';
-import { Body, Controller, Post, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards, ValidationPipe } from '@nestjs/common';
+import { GetUser } from './get-user.decorator';
 
 @Controller("auth")
 export class AuthController {
@@ -13,8 +16,15 @@ export class AuthController {
     }
 
     @Post("/signin")
-    async signin(@Body(ValidationPipe) authCredentialsDTO: AuthCredentialsDTO) {
-        const result = await this.authService.signin(authCredentialsDTO)
-        console.log(result)
+    async signin(@Body(ValidationPipe) authCredentialsDTO: AuthCredentialsDTO): Promise<{ accessToken: string }> {
+        return await this.authService.signin(authCredentialsDTO) 
     }
+
+    @Post("/test")
+    @UseGuards(AuthGuard())
+    async test(@GetUser() user: User/* @Req() req:any */){
+        /* const {user} = req */
+        console.log(user)
+    }
+
 }
