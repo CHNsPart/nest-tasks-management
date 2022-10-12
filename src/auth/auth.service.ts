@@ -59,10 +59,9 @@ export class AuthService {
         
         const payload: JwtPayload = { username }
         const accessToken: string = this.jwtService.sign(payload)
-        this.logger.debug(`Generated JSWT Token with payload ${JSON.stringify(payload)}`)
+        this.logger.debug(`Generated JWT Token with payload ${JSON.stringify(payload)}`)
         return { accessToken }
     }
-    
 
     private async hashPassword(password: string, salt: string): Promise<string> {
         return bcrypt.hash(password, salt)

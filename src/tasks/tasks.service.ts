@@ -18,8 +18,8 @@ export class TasksService {
 
     async getTasks(
         filterDTO: GetTaskFilterDTO,
-        user: User
-        ): Promise<Task[]> {
+        user: User,
+    ): Promise<Task[]> {
         const { status, search } = filterDTO
         const query = this.taskRepository.createQueryBuilder('task')
 
@@ -69,9 +69,14 @@ export class TasksService {
 
     getTaskById(
         id: number,
-        user: User
+        user: User,
     ): Promise<Task> {
-        const found = this.taskRepository.findOne({ where: {id, userId: user.id} });
+        const found = this.taskRepository.findOne({ 
+            where: {
+                id, 
+                userId: user.id
+            },
+        });
         if(!found) {
             throw new NotFoundException(`Task with ID ${id} not found!`)
         } else {

@@ -1,0 +1,8 @@
+db:
+  host: 'lcoalhost'
+  username: 'postgres'
+  password: 'postgres'
+  synchonize: true
+
+  jwt:
+    secret: 'treatAppforADIQ'
