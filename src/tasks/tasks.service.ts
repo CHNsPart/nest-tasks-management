@@ -1,5 +1,5 @@
 import { User } from './../auth/user.entity';
-import { Repository } from 'typeorm';
+import { Any, Repository } from 'typeorm';
 import { GetTaskFilterDTO } from './dto/get-task-filter.dto';
 import { CreateDTO } from './dto/create-task.dto';
 import { Injectable, NotFoundException, Logger, InternalServerErrorException } from '@nestjs/common';
@@ -7,6 +7,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Task } from './task.entity';
 /* import { TaskRepository } from './task.repository'; */
 import { TaskStatus } from './task-status.enum';
+import { paginate, Pagination, IPaginationOptions } from 'nestjs-typeorm-paginate'; 
+import { Observable } from 'rxjs';
 
 @Injectable()
 export class TasksService {
@@ -19,7 +21,8 @@ export class TasksService {
     async getTasks(
         filterDTO: GetTaskFilterDTO,
         user: User,
-    ): Promise<Task[]> {
+        options: IPaginationOptions,
+    ): Promise<Pagination<Task>> {
         const { status, search } = filterDTO
         const query = this.taskRepository.createQueryBuilder('task')
 
@@ -34,14 +37,16 @@ export class TasksService {
         }
 
         try {
-            const tasks = await query.getMany()
-            return tasks
+            const tasks:any = await query.getMany()
+            return paginate<Task>(tasks, options)
         } catch (error) {
             this.logger.error(`Failed to get tasks for user ${user.username}. Filters: ${JSON.stringify(filterDTO)}`, error.stack)
             throw new InternalServerErrorException()
         }
+    }
 
-        
+    async paginate(options: IPaginationOptions): Promise<Pagination<Task>> {
+        return paginate<Task>(this.taskRepository, options);
     }
 
     async createTask(
